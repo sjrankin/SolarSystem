@@ -19,7 +19,14 @@ then the simulator sends the prompt to devstral, which creates the proper path. 
 
 https://github.com/user-attachments/assets/e8e38597-c830-48db-a750-4c5ec3a5769a
 
+Additionally, I added a follow mode so the user has an idea of the trip from within the plane of the solar system:
+
+https://github.com/user-attachments/assets/2d3a58bf-4f2c-42e7-8388-80aae7c6e10c
+
 The app is 3D aware and can be rotated as the user desires.
+
+https://github.com/user-attachments/assets/bbb7779c-147b-463a-bb66-d816a67ac4a9
+
 
 ### Textures
 I had Claude create textures similar to planetary surfaces rather than use actual images. The goal of this program was not to have realistic-looking planets but see the orbital motions of the planets.
