@@ -11,9 +11,66 @@ var timeout_seconds := 240.0
 ## Seconds to wait when only checking that the server is there. A server that is running answers at once.
 var check_timeout_seconds := 3.0
 
+## Longest the simulator waits, when it quits, for Ollama to unload the model.
+const UNLOAD_TIMEOUT_MS := 2000
+
 ## The request in flight, so it can be cancelled.
 var _active: HTTPRequest
 var _cancelled := false
+## The models this session asked something of, to unload when the simulator quits.
+var _used_models: Array[String] = []
+
+
+func _notification(what: int) -> void:
+	# The window is closing (close button or Cmd+Q). Godot quits as soon as this returns, so the unload is done here and now.
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		unload_now()
+
+
+## Asks Ollama to unload every model this session used, so their memory is free at once instead of after Ollama's idle timeout.
+## Blocks for at most UNLOAD_TIMEOUT_MS in all; does nothing if no model was used. Returns true if Ollama confirmed every one.
+func unload_now() -> bool:
+	if _used_models.is_empty():
+		return false
+	var deadline := Time.get_ticks_msec() + UNLOAD_TIMEOUT_MS
+	var all_done := true
+	for name in _used_models.duplicate():
+		if _unload(name, deadline):
+			_used_models.erase(name)
+		else:
+			all_done = false
+	return all_done
+
+
+func _unload(name: String, deadline: int) -> bool:
+	var found := RegEx.create_from_string("^(https?)://([^/:]+)(?::(\\d+))?").search(url)
+	if found == null:
+		return false
+	var secure := found.get_string(1) == "https"
+	var port := int(found.get_string(3)) if found.get_string(3) != "" else (443 if secure else 80)
+	var client := HTTPClient.new()
+	if client.connect_to_host(found.get_string(2), port, TLSOptions.client() if secure else null) != OK:
+		return false
+	while client.get_status() in [HTTPClient.STATUS_RESOLVING, HTTPClient.STATUS_CONNECTING]:
+		if Time.get_ticks_msec() > deadline:
+			return false
+		client.poll()
+		OS.delay_msec(5)
+	if client.get_status() != HTTPClient.STATUS_CONNECTED:
+		return false
+	# keep_alive 0 tells Ollama to unload the model now; it answers once it has.
+	var body := JSON.stringify({"model": name, "keep_alive": 0})
+	if client.request(HTTPClient.METHOD_POST, "/api/generate", ["Content-Type: application/json"], body) != OK:
+		return false
+	while client.get_status() == HTTPClient.STATUS_REQUESTING:
+		if Time.get_ticks_msec() > deadline:
+			client.close()
+			return false
+		client.poll()
+		OS.delay_msec(5)
+	var unloaded := client.has_response() and client.get_response_code() == 200
+	client.close()
+	return unloaded
 
 
 ## Checks, quickly, that Ollama is running and has the model. Returns {"ok": true} or {"ok": false, "error": String}.
@@ -81,6 +138,9 @@ func _chat(system_prompt: String, user_prompt: String, schema: Dictionary) -> Di
 	}
 	if not schema.is_empty():
 		body["format"] = schema
+	# From here Ollama may load the model, so it is unloaded on quit even if this call fails or is skipped.
+	if not model in _used_models:
+		_used_models.append(model)
 	var reply := await _send("/api/chat", HTTPClient.METHOD_POST, JSON.stringify(body), timeout_seconds)
 	if not reply["ok"]:
 		return reply

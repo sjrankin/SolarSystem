@@ -16,6 +16,7 @@ var _result_label: Label
 var _result_scroll: ScrollContainer
 var _go_button: Button
 var _plan_button: Button
+var _follow_toggle: CheckButton
 var _thread: Thread
 var _busy := false
 var _best: Dictionary = {}
@@ -44,12 +45,34 @@ func focus_input() -> void:
 	_input.grab_focus()
 
 
+## Turns Follow mode on or off (the F key).
+func toggle_follow() -> void:
+	_follow_toggle.button_pressed = not _follow_toggle.button_pressed
+
+
+func is_following() -> bool:
+	return _follow_toggle.button_pressed
+
+
 func _process(_delta: float) -> void:
 	_path.update_time(sim.sim_days)
+	_update_follow()
 	if _thread != null and not _thread.is_alive():
 		var results: Variant = _thread.wait_to_finish()
 		_thread = null
 		_planned.emit(results)
+
+
+## With Follow on, the camera chases the spacecraft only while the flight is in progress (from departure to arrival). Before
+## departure it waits where it is; on arrival it stops and stays there.
+func _update_follow() -> void:
+	var craft := _path.spacecraft()
+	var wanted := is_following() and _path.in_progress(sim.sim_days)
+	var camera: OrbitCamera = sim._camera
+	if wanted and camera.follow != craft:
+		camera.start_following(craft)
+	elif not wanted and camera.follow == craft:
+		camera.stop_following()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -98,6 +121,13 @@ func _build_panel() -> void:
 	clear.text = "Clear"
 	clear.pressed.connect(_on_clear_pressed)
 	buttons.add_child(clear)
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buttons.add_child(spacer)
+	_follow_toggle = CheckButton.new()
+	_follow_toggle.text = "Follow"
+	_follow_toggle.tooltip_text = "While the flight is in progress, the camera chases the spacecraft from just behind it, along the plane of the solar system (F)."
+	buttons.add_child(_follow_toggle)
 
 	var weight_row := HBoxContainer.new()
 	column.add_child(weight_row)
@@ -159,8 +189,10 @@ func _save_model() -> void:
 	if name.is_empty():
 		_model_edit.text = _client.model
 		return
+	if name == _client.model:
+		return
 	_client.model = name
-	FlightSettings.save_settings({"model": _client.model, "url": _client.url})
+	FlightSettings.save_settings({"model": name})
 
 
 func _on_clear_pressed() -> void:

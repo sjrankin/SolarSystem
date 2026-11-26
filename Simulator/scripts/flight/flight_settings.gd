@@ -23,8 +23,11 @@ static func load_settings() -> Dictionary:
 	return settings
 
 
+## Saves only the settings given (for example {"model": "devstral:24b"}), keeping the others in the file as they are. A value that is
+## only in effect for this run (a command-line override, or an address a test points at) is never written by accident this way.
 static func save_settings(settings: Dictionary) -> void:
 	var file := ConfigFile.new()
-	file.set_value("llm", "model", settings["model"])
-	file.set_value("llm", "url", settings["url"])
+	file.load(PATH)
+	for key in settings:
+		file.set_value("llm", key, settings[key])
 	file.save(PATH)

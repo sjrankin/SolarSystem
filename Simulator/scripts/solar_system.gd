@@ -94,6 +94,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			set_date(_now_days())
 		KEY_R:
 			set_real_time()
+		KEY_F:
+			_flight_ui.toggle_follow()
 
 
 # ---- The clock. The clock panel, the keys and the flight planner all change it through these, so the planets always match. ----
@@ -304,7 +306,7 @@ func _build_hud() -> void:
 
 	var hint := Label.new()
 	hint.text = "Drag: rotate   Right-drag / Option-drag: move   Scroll or pinch: zoom   Double-click: reset view\n" \
-		+ "Space: pause   +/-: speed   L: linear / compressed distances   G: gravity wells   T: jump to today   R: real time"
+		+ "Space: pause   +/-: speed   L: linear / compressed distances   G: gravity wells   T: jump to today   R: real time   F: follow the spacecraft"
 	hint.add_theme_font_size_override("font_size", 14)
 	hint.modulate = Color(1, 1, 1, 0.6)
 	hint.anchor_top = 1.0

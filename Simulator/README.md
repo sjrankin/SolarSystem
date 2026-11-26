@@ -57,6 +57,11 @@ time", then press Plan. A local language model (Ollama, default `devstral:24b`, 
 with extra gravity-assist planets. The model never does the orbital maths: every route is planned by the solver in
 `scripts/astro/`, the best one (judged on a common time/energy score) is drawn with its departure, fly-by and arrival dates, and
 the model then explains the result. "Fly it" sets the clock to the departure and runs the trip with a spacecraft marker.
+With **Follow** on (the switch beside Clear, or F), the camera chases the spacecraft while the flight is in progress, from
+departure to arrival: it glides in low and close behind it, just above the plane of the solar system, looking the way it is going,
+and turns as the path curves. Before departure it waits, and on arrival it stops where it is. Dragging swings the view around the
+spacecraft, zoom and moving still work, and double-click comes back to the chase view. Check with
+`godot --headless --path . --script res://test/check_follow.gd`.
 
 - Each leg is a Lambert transfer between the planets' real positions (`lambert.gd`), found by searching departure dates and flight
   times for the cheapest plan (`flight_planner.gd`: a dynamic programme over a time grid, then a local refinement of the dates).
@@ -70,7 +75,9 @@ the model then explains the result. "Fly it" sets the clock to the departure and
   is not running, the model is not installed, the answer is slow or can't be used, or you press Skip model (the Plan button while
   it waits), the plain reader (`flight_request.gd`) takes over. It still finds the planets, the preference and the limits in the
   text, without the extra routes or the explanation, and the status line says why. Check with
-  `godot --headless --path . --script res://test/check_llm_offline.gd` (no Ollama needed). The server address is `127.0.0.1` because Godot tries the IPv6 address of `localhost`, which
+  `godot --headless --path . --script res://test/check_llm_offline.gd` (no Ollama needed). When the simulator's window closes, it asks Ollama to unload
+  any model it used (keep_alive 0, at most 2 seconds), so the memory is freed at once; Ollama itself keeps running. Check with
+  `godot --headless --path . --script res://test/check_unload.gd`. The server address is `127.0.0.1` because Godot tries the IPv6 address of `localhost`, which
   Ollama does not listen on.
 - Limits of the model: Keplerian planets, patched conics, no multi-revolution transfers, an assist is instantaneous (no waiting in
   orbit between arriving and leaving), and planet masses include their moons.
@@ -99,6 +106,7 @@ back to what it was before (choosing a speed or a date during the flight keeps y
 | G | Show / hide the gravity-well grid |
 | T | Jump back to today's date |
 | R | Real time: the current date and time, at one second per second |
+| F | Follow the spacecraft on / off |
 
 Compressed distances (default) scale each orbit's radius by the square root of its size in AU so the
 inner planets stay readable next to Pluto; directions, and so the angular positions, are unchanged.

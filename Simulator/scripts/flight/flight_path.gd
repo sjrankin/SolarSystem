@@ -134,6 +134,11 @@ func has_result() -> bool:
 	return not _result.is_empty()
 
 
+## The spacecraft's glow, for the camera to follow. Hidden while there is no flight.
+func spacecraft() -> Node3D:
+	return _marker
+
+
 func set_linear(linear: bool) -> void:
 	_linear = linear
 	if has_result():
@@ -213,3 +218,24 @@ func update_time(days: float) -> void:
 		_marker.position = _to_scene(Ephemeris.position(_destination_body, days))
 	else:
 		_marker.position = _position_at(days)
+	# The marker faces the way the spacecraft is going (its -Z axis), for the chase camera.
+	var heading := heading_at(days)
+	if heading.length() > 1e-9:
+		_marker.basis = Basis.looking_at(heading, Vector3.UP if absf(heading.normalized().y) < 0.99 else Vector3.RIGHT)
+
+
+## True from departure to arrival.
+func in_progress(days: float) -> bool:
+	return not _times.is_empty() and days >= _times[0] and days <= _times[_times.size() - 1]
+
+
+## The direction the spacecraft is moving along the drawn path at a time (clamped to the flight), in scene units; it follows the
+## compressed distances, so it matches what is on screen.
+func heading_at(days: float) -> Vector3:
+	if _times.is_empty():
+		return Vector3.ZERO
+	var first := _times[0]
+	var last := _times[_times.size() - 1]
+	var step := clampf((last - first) * 0.002, 0.01, 1.0)
+	var at := clampf(days, first + step, last - step)
+	return _position_at(at + step) - _position_at(at - step)
