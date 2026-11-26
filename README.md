@@ -23,3 +23,10 @@ The app is 3D aware and can be rotated as the user desires.
 
 ### Textures
 I had Claude create textures similar to planetary surfaces rather than use actual images. The goal of this program was not to have realistic-looking planets but see the orbital motions of the planets.
+
+### Local AI Installation
+I used instructions in the book _Build Applications with Local AI Models on a Mac_ for installing ollama and LLMs on my computer. 
+
+There were two things of interest I found:
+1. My Mac Mini has 32GB of RAM. That is just barely sufficient to run devstral:24b and Xcode and Godot IDE simultaneously (but sluggishly). (I tried a qwen LLM but it was even slower.) I later found out I don't have to run the model explicitly - ollama will run it via a call from the app. I had Claude add instructions to unload the model when the app closes to keep my system responsive.
+2. Even though LLMs are fast for what they do, they are slow for a user waiting for a response. It takes noticeable time to get a flight route back from the LLM.
