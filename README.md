@@ -12,6 +12,8 @@ This app is implement in Godot for better graphics and to make it straightforwar
 On my local Mac, I installed ollama and devstral:24b. I then added a feature to the Solar System simulator to show flights between planets. To to that, the user enters a path, along the lines of
 > fly from the Earth to Neptune with a flyby of Jupiter
 
-then the simulator sends the prompt to devstral, which creates the proper path. The path is returned to the app, which then converts the results into the proper coordinates.
+then the simulator sends the prompt to devstral, which creates the proper path. The path is returned to the app, which then converts the results into the proper coordinates. This was an exercise in 
+1. Installing a local LLM on my computer (and realizing that 32GB of RAM is not really enough...), and
+2. Actually using the local LLM in a program.
 
 https://github.com/user-attachments/assets/e8e38597-c830-48db-a750-4c5ec3a5769a
